@@ -177,6 +177,20 @@
 			"Rev": "531fd444821a2eda0e8d1ed033ae207641e03b54"
 		},
 		{
+			"ImportPath": "github.com/cpacia/BitcoinCash-Wallet",
+			"Comment": "v0.2.0-11-gb7a42e5",
+			"Rev": "b7a42e5242c598f00dc1df4cebf33152a3dcd6a6"
+		},
+		{
+			"ImportPath": "github.com/cpacia/BitcoinCash-Wallet/exchangerates",
+			"Comment": "v0.2.0-11-gb7a42e5",
+			"Rev": "b7a42e5242c598f00dc1df4cebf33152a3dcd6a6"
+		},
+		{
+			"ImportPath": "github.com/cpacia/bchutil",
+			"Rev": "3e0c5c9195ac62fc65afdf953e5ff87679325c59"
+		},
+		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
 			"Comment": "v1.1.0",
 			"Rev": "346938d642f2ec3594ed81d874461961cd0faa76"

@@ -81,6 +81,8 @@ import (
 	smux "gx/ipfs/QmeZBgYBHvxMukGK5ojg28BCNLB9SeXqT7XXg6o7r2GbJy/go-stream-muxer"
 	"syscall"
 	"time"
+	"github.com/cpacia/BitcoinCash-Wallet"
+	bcrates "github.com/cpacia/BitcoinCash-Wallet/exchangerates"
 )
 
 var log = logging.MustGetLogger("main")
@@ -715,6 +717,12 @@ func (x *Start) Execute(args []string) error {
 	e := new(namepb.IpnsEntry)
 	proto.Unmarshal(dhtrec.GetValue(), e)
 
+	// Exchange rates
+	var exchangeRates bitcoin.ExchangeRates
+	if !x.DisableExchangeRates {
+		exchangeRates = exchange.NewBitcoinPriceFetcher(torDialer)
+	}
+
 	// Wallet
 	mn, err := sqliteDB.Config().GetMnemonic()
 	if err != nil {
@@ -778,6 +786,44 @@ func (x *Start) Execute(args []string) error {
 		if err != nil {
 			log.Error(err)
 			return err
+		}
+	case "bitcoincash":
+		var tp net.Addr
+		if walletCfg.TrustedPeer != "" {
+			tp, err = net.ResolveTCPAddr("tcp", walletCfg.TrustedPeer)
+			if err != nil {
+				log.Error(err)
+				return err
+			}
+		}
+		feeApi, err := url.Parse(walletCfg.FeeAPI)
+		if err != nil {
+			log.Error(err)
+			return err
+		}
+		spvwalletConfig := &bitcoincash.Config{
+			Mnemonic:     mn,
+			Params:       &params,
+			MaxFee:       uint64(walletCfg.MaxFee),
+			LowFee:       uint64(walletCfg.LowFeeDefault),
+			MediumFee:    uint64(walletCfg.MediumFeeDefault),
+			HighFee:      uint64(walletCfg.HighFeeDefault),
+			FeeAPI:       *feeApi,
+			RepoPath:     repoPath,
+			CreationDate: creationDate,
+			DB:           sqliteDB,
+			UserAgent:    "OpenBazaar",
+			TrustedPeer:  tp,
+			Proxy:        torDialer,
+			Logger:       ml,
+		}
+		crytoWallet, err = bitcoincash.NewSPVWallet(spvwalletConfig)
+		if err != nil {
+			log.Error(err)
+			return err
+		}
+		if !x.DisableExchangeRates {
+			exchangeRates = bcrates.NewBitcoinCashPriceFetcher(torDialer)
 		}
 	case "bitcoind":
 		if walletCfg.Binary == "" {
@@ -884,11 +930,6 @@ func (x *Start) Execute(args []string) error {
 		err = errors.New("Invalid storage option")
 		log.Error(err)
 		return err
-	}
-
-	var exchangeRates bitcoin.ExchangeRates
-	if !x.DisableExchangeRates {
-		exchangeRates = exchange.NewBitcoinPriceFetcher(torDialer)
 	}
 
 	// Set up the ban manager
